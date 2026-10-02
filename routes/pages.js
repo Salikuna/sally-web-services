@@ -7,7 +7,7 @@ router.get('/', (req, res) => {
 });
 
 router.get('/about', (req, res) => {
-  res.send('About page');
+  res.render('about', { title: 'About' });
 });
 
 export default router;

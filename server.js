@@ -30,6 +30,28 @@ app.get('/count', (req, res) => {
   res.send(`Counting from ${from} to ${to}.`);
 });
 
+//Unit 2:In-Class Activity 
+const projects = [
+  { name: 'Weather app', tag: 'javascript' },
+  { name: 'Portfolio site', tag: 'express' },
+  { name: 'Budget tracker', tag: 'python' },
+];
+
+app.get('/projects', (req, res) => {
+  const tag = req.query.tag;
+
+  if (!tag) {
+    res.json(projects);
+    return;
+  }
+
+  const filteredProjects = projects.filter(
+    project => project.tag === tag
+  );
+
+  res.json(filteredProjects);
+});
+
 app.use((req, res) => {
   res.status(404).send('Page not found.');
 });

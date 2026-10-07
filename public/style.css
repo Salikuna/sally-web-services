@@ -1,0 +1,51 @@
+:root {
+  --color-border: #ccc;
+  --color-text: #222;
+  --spacing-md: 1rem;
+}
+body:has(.theme-toggle:checked) {
+  --color-bg: #1a1b26;
+  --color-text: #e4e7ef;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: sans-serif;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 1rem;
+  background-color: var(--color-bg);
+  color: var(--color-text);
+}
+
+.site-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 2px solid var(--color-border);
+  padding-bottom: calc(var(--spacing-md) / 2);
+  margin-bottom: 1rem;
+  color: var(--color-text);
+}
+
+nav a {
+  margin-right: 1rem;
+}
+
+ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  list-style: none;
+  padding: 0;
+}
+
+li {
+  flex: 1 1 200px;
+  padding: var(--spacing-md);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+}

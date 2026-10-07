@@ -4,6 +4,7 @@ import apiRouter from './routes/api.js';
 
 
 const app = express();
+app.use(express.static('public'));
 app.set("view engine", "ejs");
 const PORT = process.env.PORT || 3000;
 
@@ -55,6 +56,54 @@ app.get('/projects', (req, res) => {
   );
 
   res.json(filteredProjects);
+});
+
+const entries = [
+  { title: 'First note', body: 'This is the first entry.' },
+  { title: 'Second note', body: 'This is the second entry.' },
+  { title: 'Third note', body: 'This is the third entry.' }
+];
+
+app.get('/entries', (req, res) => {
+  res.render('layout', {
+    title: 'My Notes',
+    page: 'entries',
+    entries
+  });
+});
+
+app.get('/entries/:id', (req, res) => {
+  const id = Number(req.params.id);
+  const entry = entries[id];
+
+  if (!entry) {
+    res.status(404).render('layout', {
+      title: 'Error',
+      page: 'error',
+      message: 'Entry not found.'
+    });
+    return;
+  }
+
+  res.render('layout', {
+    title: entry.title,
+    page: 'entry',
+    entry
+  });
+});
+
+const events = [
+  { title: 'Career fair' },
+  { title: 'Hackathon kickoff' },
+  { title: 'Networking night' }
+];
+
+app.get('/events', (req, res) => {
+  res.render('layout', {
+    title: 'Events',
+    page: 'events',
+    events
+  });
 });
 
 app.use((req, res) => {

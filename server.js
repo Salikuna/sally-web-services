@@ -80,6 +80,7 @@ app.post('/wishlist', (req, res) => {
 });
 
 app.get('/entries', (req, res) => {
+  res.set('Cache-Control', 'public, max-age=60');
   res.set('X-Total-Count', entries.length);
 
   res.status(200).render('layout', {

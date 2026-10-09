@@ -4,36 +4,37 @@ import apiRouter from './routes/api.js';
 
 
 const app = express();
+app.use(express.json());
 app.use(express.static('public'));
 app.set("view engine", "ejs");
 const PORT = process.env.PORT || 3000;
 
 app.get('/about', (req, res) => {
-  res.render('about', { title: 'About' });
+  res.status(200).render('about', { title: 'About' });
 });
 
 app.use('/', pagesRouter);
 app.use('/api', apiRouter);
 
 app.get('/hello', (req, res) => {
-  res.send('I am learning how to build web servers with Express.');
+  res.status(200).send('I am learning how to build web servers with Express.');
 });
 
 app.get('/hello/:name', (req, res) => {
   const name = req.params.name;
-  res.send(`Hello, ${name}!`);
+  res.status(200).send(`Hello, ${name}!`);
 });
 
 app.get('/repeat/:word', (req, res) => {
   const word = req.params.word;
-  res.send(`${word} ${word} ${word}`);
+  res.status(200).send(`${word} ${word} ${word}`);
 });
 
 app.get('/count', (req, res) => {
   const from = req.query.from || 1;
   const to = req.query.to || 10;
 
-  res.send(`Counting from ${from} to ${to}.`);
+  res.status(200).send(`Counting from ${from} to ${to}.`);
 });
 
 //Unit 2:In-Class Activity 
@@ -47,7 +48,7 @@ app.get('/projects', (req, res) => {
   const tag = req.query.tag;
 
   if (!tag) {
-    res.json(projects);
+    res.status(200).json(projects);
     return;
   }
 
@@ -55,7 +56,7 @@ app.get('/projects', (req, res) => {
     project => project.tag === tag
   );
 
-  res.json(filteredProjects);
+  res.status(200).json(filteredProjects);
 });
 
 const entries = [
@@ -63,14 +64,44 @@ const entries = [
   { title: 'Second note', body: 'This is the second entry.' },
   { title: 'Third note', body: 'This is the third entry.' }
 ];
+//Unit 5: In-Class Activity
+const wishlist = [];
+app.post('/wishlist', (req, res) => {
+  const { item, note } = req.body;
+
+  if (!item) {
+    res.status(400).json({ error: 'item is required' });
+    return;
+  }
+
+  const newItem = { item, note };
+  wishlist.push(newItem);
+  res.status(201).json(newItem);
+});
 
 app.get('/entries', (req, res) => {
-  res.render('layout', {
+  res.set('X-Total-Count', entries.length);
+
+  res.status(200).render('layout', {
     title: 'My Notes',
     page: 'entries',
     entries
   });
 });
+
+app.post('/entries', (req, res) => {
+  const { title, body } = req.body;
+
+  if (!title || !body) {
+    res.status(400).json({ error: 'title and body are required' });
+    return;
+  }
+
+  const newEntry = { title, body };
+  entries.push(newEntry);
+  res.status(201).json(newEntry);
+});
+
 
 app.get('/entries/:id', (req, res) => {
   const id = Number(req.params.id);
@@ -84,12 +115,23 @@ app.get('/entries/:id', (req, res) => {
     });
     return;
   }
-
-  res.render('layout', {
+  res.status(200).render('layout', {
     title: entry.title,
     page: 'entry',
     entry
   });
+});
+
+app.delete('/entries/:id', (req, res) => {
+  const id = parseInt(req.params.id);
+
+  if (Number.isNaN(id) || id < 0 || id >= entries.length) {
+    res.status(404).json({ error: 'Entry not found' });
+    return;
+  }
+
+  entries.splice(id, 1);
+  res.status(204).send();
 });
 
 const events = [
@@ -99,7 +141,7 @@ const events = [
 ];
 
 app.get('/events', (req, res) => {
-  res.render('layout', {
+  res.status(200).render('layout', {
     title: 'Events',
     page: 'events',
     events

@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <title>Environmental Monitoring Dashboard</title>
+  </head>
+  <body>
+    <h1>Environmental Monitoring Dashboard</h1>
+
+    <ul>
+      <% stations.forEach((station) => { %>
+        <li>
+          <strong><%= station.name %></strong>
+          —
+          <%= readings.filter((reading) => reading.stationId === station.id).length %>
+          readings
+        </li>
+      <% }); %>
+    </ul>
+  </body>
+</html>

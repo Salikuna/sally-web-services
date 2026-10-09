@@ -60,10 +60,12 @@ app.get('/projects', (req, res) => {
 });
 
 const entries = [
-  { title: 'First note', body: 'This is the first entry.' },
-  { title: 'Second note', body: 'This is the second entry.' },
-  { title: 'Third note', body: 'This is the third entry.' }
+  { id: 0, title: 'First note', body: 'This is the first entry.' },
+  { id: 1, title: 'Second note', body: 'This is the second entry.' },
+  { id: 2, title: 'Third note', body: 'This is the third entry.' }
 ];
+
+let nextEntryId = 3;
 //Unit 5: In-Class Activity
 const wishlist = [];
 app.post('/wishlist', (req, res) => {
@@ -98,7 +100,7 @@ app.post('/entries', (req, res) => {
     return;
   }
 
-  const newEntry = { title, body };
+  const newEntry = { id: nextEntryId++, title, body };
   entries.push(newEntry);
   res.status(201).json(newEntry);
 });
@@ -106,7 +108,7 @@ app.post('/entries', (req, res) => {
 
 app.get('/entries/:id', (req, res) => {
   const id = Number(req.params.id);
-  const entry = entries[id];
+  const entry = entries.find(entry => entry.id === id);
 
   if (!entry) {
     res.status(404).render('layout', {
@@ -116,6 +118,7 @@ app.get('/entries/:id', (req, res) => {
     });
     return;
   }
+
   res.status(200).render('layout', {
     title: entry.title,
     page: 'entry',
@@ -124,14 +127,16 @@ app.get('/entries/:id', (req, res) => {
 });
 
 app.delete('/entries/:id', (req, res) => {
-  const id = parseInt(req.params.id);
+  const id = Number(req.params.id);
+  const index = entries.findIndex(entry => entry.id === id);
 
-  if (Number.isNaN(id) || id < 0 || id >= entries.length) {
+  if (!Number.isInteger(id) || id < 0 || index === -1) {
+    // Return 404 because the requested entry does not exist or was already deleted.
     res.status(404).json({ error: 'Entry not found' });
     return;
   }
 
-  entries.splice(id, 1);
+  entries.splice(index, 1);
   res.status(204).send();
 });
 

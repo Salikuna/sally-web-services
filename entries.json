@@ -1,0 +1,17 @@
+[
+  {
+    "id": 0,
+    "title": "First note",
+    "body": "Notes from the first session."
+  },
+  {
+    "id": 1,
+    "title": "Second note",
+    "body": "Notes from the second session."
+  },
+  {
+    "id": 2,
+    "title": "Third note",
+    "body": "Notes from the third session."
+  }
+]

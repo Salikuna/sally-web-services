@@ -1,7 +1,7 @@
 import express from 'express';
 import pagesRouter from './routes/pages.js';
 import apiRouter from './routes/api.js';
-
+import { readFile, writeFile } from 'fs/promises';
 
 const app = express();
 app.use(express.json());
@@ -59,13 +59,14 @@ app.get('/projects', (req, res) => {
   res.status(200).json(filteredProjects);
 });
 
-const entries = [
-  { id: 0, title: 'First note', body: 'This is the first entry.' },
-  { id: 1, title: 'Second note', body: 'This is the second entry.' },
-  { id: 2, title: 'Third note', body: 'This is the third entry.' }
-];
+async function readEntries() {
+  const data = await readFile('entries.json', 'utf-8');
+  return JSON.parse(data);
+}
 
-let nextEntryId = 3;
+async function saveEntries(entries) {
+  await writeFile('entries.json', JSON.stringify(entries, null, 2));
+}
 //Unit 5: In-Class Activity
 const wishlist = [];
 app.post('/wishlist', (req, res) => {
@@ -81,7 +82,9 @@ app.post('/wishlist', (req, res) => {
   res.status(201).json(newItem);
 });
 
-app.get('/entries', (req, res) => {
+app.get('/entries', async (req, res) => {
+  const entries = await readEntries();
+
   res.set('Cache-Control', 'public, max-age=60');
   res.set('X-Total-Count', entries.length);
 
@@ -92,22 +95,38 @@ app.get('/entries', (req, res) => {
   });
 });
 
-app.post('/entries', (req, res) => {
-  const { title, body } = req.body;
+app.post('/entries', async (req, res) => {
+  const { title, body } = req.body ?? {};
 
   if (!title || !body) {
     res.status(400).json({ error: 'title and body are required' });
     return;
   }
 
-  const newEntry = { id: nextEntryId++, title, body };
+  const entries = await readEntries();
+
+  const counterData = await readFile('next-entry-id.json', 'utf-8');
+  const counter = JSON.parse(counterData);
+
+  const newEntry = {
+    id: counter.nextId,
+    title,
+    body
+  };
+
+  counter.nextId += 1;
   entries.push(newEntry);
+
+  await saveEntries(entries);
+  await writeFile('next-entry-id.json', JSON.stringify(counter, null, 2));
+
   res.status(201).json(newEntry);
 });
 
-
-app.get('/entries/:id', (req, res) => {
+app.get('/entries/:id', async (req, res) => {
   const id = Number(req.params.id);
+  const entries = await readEntries();
+
   const entry = entries.find(entry => entry.id === id);
 
   if (!entry) {
@@ -126,25 +145,23 @@ app.get('/entries/:id', (req, res) => {
   });
 });
 
-app.delete('/entries/:id', (req, res) => {
+app.delete('/entries/:id', async (req, res) => {
   const id = Number(req.params.id);
+  const entries = await readEntries();
+
   const index = entries.findIndex(entry => entry.id === id);
 
   if (!Number.isInteger(id) || id < 0 || index === -1) {
-    // Return 404 because the requested entry does not exist or was already deleted.
+    // Return 404 because the entry does not exist or was already deleted.
     res.status(404).json({ error: 'Entry not found' });
     return;
   }
 
   entries.splice(index, 1);
+  await saveEntries(entries);
+
   res.status(204).send();
 });
-
-const events = [
-  { title: 'Career fair' },
-  { title: 'Hackathon kickoff' },
-  { title: 'Networking night' }
-];
 
 app.get('/events', (req, res) => {
   res.status(200).render('layout', {
@@ -152,6 +169,26 @@ app.get('/events', (req, res) => {
     page: 'events',
     events
   });
+});
+
+const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+app.get('/slow', async (req, res) => {
+  await wait(5000);
+  res.status(200).send('Done waiting.');
+});
+
+app.get('/three-posts', async (req, res) => {
+  const ids = [1, 2, 3];
+  const titles = [];
+
+  for (const id of ids) {
+    const response = await fetch(`https://jsonplaceholder.typicode.com/posts/${id}`);
+    const post = await response.json();
+    titles.push(post.title);
+  }
+
+  res.status(200).json({ titles });
 });
 
 app.use((req, res) => {

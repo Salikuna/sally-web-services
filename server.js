@@ -67,6 +67,18 @@ async function readEntries() {
 async function saveEntries(entries) {
   await writeFile('entries.json', JSON.stringify(entries, null, 2));
 }
+
+let writeQueue = Promise.resolve();
+
+function queueWrite(operation) {
+  const result = writeQueue.then(operation);
+
+  // Serialize writes to prevent concurrent requests from overwriting each other.
+  writeQueue = result.catch(() => {});
+
+  return result;
+}
+
 //Unit 5: In-Class Activity
 const wishlist = [];
 app.post('/wishlist', (req, res) => {
@@ -99,26 +111,34 @@ app.post('/entries', async (req, res) => {
   const { title, body } = req.body ?? {};
 
   if (!title || !body) {
-    res.status(400).json({ error: 'title and body are required' });
-    return;
+    return res.status(400).json({
+      error: 'title and body are required'
+    });
   }
 
-  const entries = await readEntries();
+  const newEntry = await queueWrite(async () => {
+    const entries = await readEntries();
 
-  const counterData = await readFile('next-entry-id.json', 'utf-8');
-  const counter = JSON.parse(counterData);
+    const counterData = await readFile('next-entry-id.json', 'utf-8');
+    const counter = JSON.parse(counterData);
 
-  const newEntry = {
-    id: counter.nextId,
-    title,
-    body
-  };
+    const entry = {
+      id: counter.nextId,
+      title,
+      body
+    };
 
-  counter.nextId += 1;
-  entries.push(newEntry);
+    entries.push(entry);
+    counter.nextId += 1;
 
-  await saveEntries(entries);
-  await writeFile('next-entry-id.json', JSON.stringify(counter, null, 2));
+    await saveEntries(entries);
+    await writeFile(
+      'next-entry-id.json',
+      JSON.stringify(counter, null, 2)
+    );
+
+    return entry;
+  });
 
   res.status(201).json(newEntry);
 });
@@ -147,18 +167,29 @@ app.get('/entries/:id', async (req, res) => {
 
 app.delete('/entries/:id', async (req, res) => {
   const id = Number(req.params.id);
-  const entries = await readEntries();
 
-  const index = entries.findIndex(entry => entry.id === id);
-
-  if (!Number.isInteger(id) || id < 0 || index === -1) {
-    // Return 404 because the entry does not exist or was already deleted.
-    res.status(404).json({ error: 'Entry not found' });
-    return;
+  if (!Number.isInteger(id) || id < 0) {
+    return res.status(404).json({ error: 'Entry not found' });
   }
 
-  entries.splice(index, 1);
-  await saveEntries(entries);
+  const deleted = await queueWrite(async () => {
+    const entries = await readEntries();
+    const index = entries.findIndex(entry => entry.id === id);
+
+    if (index === -1) {
+      return false;
+    }
+
+    entries.splice(index, 1);
+    await saveEntries(entries);
+
+    return true;
+  });
+
+  if (!deleted) {
+    // Return 404 because the entry does not exist or was already deleted.
+    return res.status(404).json({ error: 'Entry not found' });
+  }
 
   res.status(204).send();
 });

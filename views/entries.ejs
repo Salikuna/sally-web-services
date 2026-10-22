@@ -1,5 +1,29 @@
-<ul class="cards">
+<form id="entry-form">
+  <input type="text" name="title" placeholder="Title">
+  <input type="text" name="body" placeholder="Body">
+  <button type="submit">Add entry</button>
+</form>
+
+<ul id="entries" class="cards">
   <% entries.forEach((entry) => { %>
-    <li class="card"><%= entry.title %></li>
+    <li class="card" data-id="<%= entry.id %>">
+      <span>
+        <strong><%= entry.title %>:</strong>
+        <%= entry.body %>
+      </span>
+      <button type="button" class="delete-btn">Delete</button>
+    </li>
   <% }); %>
 </ul>
+
+<section class="classic-form">
+  <h2>Classic form (no JavaScript)</h2>
+
+  <form method="POST" action="/entries/classic">
+    <input type="text" name="title" placeholder="Title">
+    <input type="text" name="body" placeholder="Body">
+    <button type="submit">Add entry the classic way</button>
+  </form>
+</section>
+
+<script src="/app.js" defer></script>

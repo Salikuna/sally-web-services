@@ -5,6 +5,7 @@ import { readFile, writeFile } from 'fs/promises';
 
 const app = express();
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'));
 app.set("view engine", "ejs");
 const PORT = process.env.PORT || 3000;
@@ -141,6 +142,38 @@ app.post('/entries', async (req, res) => {
   });
 
   res.status(201).json(newEntry);
+});
+
+// Unit 08: Classic HTML form using Post/Redirect/Get.
+app.post('/entries/classic', async (req, res) => {
+  const { title, body } = req.body ?? {};
+  if (!title || !body) {
+    return res.status(400).send('title and body are required');
+  }
+  await queueWrite(async () => {
+    const entries = await readEntries();
+
+    const counterData = await readFile('next-entry-id.json', 'utf-8');
+    const counter = JSON.parse(counterData);
+
+    const newEntry = {
+      id: counter.nextId,
+      title,
+      body
+    };
+
+    entries.push(newEntry);
+    counter.nextId += 1;
+
+    await saveEntries(entries);
+    await writeFile(
+      'next-entry-id.json',
+      JSON.stringify(counter, null, 2)
+    );
+  });
+
+  // Refreshing the page repeats GET, not POST.
+  res.redirect('/entries');
 });
 
 app.get('/entries/:id', async (req, res) => {

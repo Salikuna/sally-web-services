@@ -159,7 +159,7 @@ router.put('/:id', asyncHandler(async (req, res) => {
     }
 
     const entry = {
-      id,
+      ...entries[index],
       ...result.value
     };
 
@@ -173,6 +173,34 @@ router.put('/:id', asyncHandler(async (req, res) => {
     return res.status(404).json({ error: 'Entry not found' });
   }
 
+  res.status(200).json(updatedEntry);
+}));
+router.patch('/:id/pin', asyncHandler(async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id < 0) {
+    return res.status(404).json({ error: 'Entry not found' });
+  }
+  if (typeof req.body?.pinned !== 'boolean') {
+    return res.status(400).json({ error: 'pinned must be a boolean' });
+  }
+  const updatedEntry = await queueWrite(async () => {
+    const entries = await readEntries();
+    const index = entries.findIndex(entry => entry.id === id);
+
+    if (index === -1) {
+      return null;
+    }
+    entries[index] = {
+      ...entries[index],
+      pinned: req.body.pinned
+    };
+    await saveEntries(entries);
+    return entries[index];
+  });
+
+  if (!updatedEntry) {
+    return res.status(404).json({ error: 'Entry not found' });
+  }
   res.status(200).json(updatedEntry);
 }));
 

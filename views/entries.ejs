@@ -6,11 +6,17 @@
 
 <ul id="entries" class="cards">
   <% entries.forEach((entry) => { %>
-    <li class="card" data-id="<%= entry.id %>">
-      <span>
+    <li class="card"
+        data-id="<%= entry.id %>"
+        data-title="<%= entry.title %>"
+        data-body="<%= entry.body %>">
+
+      <span class="entry-display">
         <strong><%= entry.title %>:</strong>
         <%= entry.body %>
       </span>
+
+      <button type="button" class="edit-btn">Edit</button>
       <button type="button" class="delete-btn">Delete</button>
     </li>
   <% }); %>

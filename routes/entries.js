@@ -136,6 +136,46 @@ router.post('/classic', asyncHandler(async (req, res) => {
   res.redirect('/entries');
 }));
 
+// Unit 10: Updating the existing entry while preserving its stable ID.
+router.put('/:id', asyncHandler(async (req, res) => {
+  const id = Number(req.params.id);
+
+  if (!Number.isInteger(id) || id < 0) {
+    return res.status(404).json({ error: 'Entry not found' });
+  }
+
+  const result = validateEntry(req.body);
+
+  if (!result.ok) {
+    return res.status(400).json({ error: result.error });
+  }
+
+  const updatedEntry = await queueWrite(async () => {
+    const entries = await readEntries();
+    const index = entries.findIndex(entry => entry.id === id);
+
+    if (index === -1) {
+      return null;
+    }
+
+    const entry = {
+      id,
+      ...result.value
+    };
+
+    entries[index] = entry;
+    await saveEntries(entries);
+
+    return entry;
+  });
+
+  if (!updatedEntry) {
+    return res.status(404).json({ error: 'Entry not found' });
+  }
+
+  res.status(200).json(updatedEntry);
+}));
+
 router.delete('/:id', asyncHandler(async (req, res) => {
   const id = Number(req.params.id);
 

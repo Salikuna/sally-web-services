@@ -1,6 +1,46 @@
 const form = document.querySelector('#entry-form');
 const list = document.querySelector('#entries');
 
+const timedFetch = (url, options = {}) =>
+  fetch(url, { ...options, signal: AbortSignal.timeout(5000) });
+
+const fetchJSON = async (url, options) => {
+  let response;
+
+  try {
+    response = await timedFetch(url, options);
+  } catch (error) {
+    throw new Error(
+      error.name === 'TimeoutError'
+        ? 'The server did not answer within five seconds.'
+        : 'Could not reach the server.'
+    );
+  }
+
+  let body = {};
+
+  try {
+    body = await response.json();
+  } catch {
+  }
+  if (!response.ok) {
+    const error = new Error(
+      body.error || `The server answered ${response.status}.`
+    );
+    error.status = response.status;
+    throw error;
+  }
+  if (response.status !== 204 && Object.keys(body).length === 0) {
+    throw new Error('The server returned an invalid JSON response.');
+  }
+  return body;
+};
+
+const fillDisplay = (display, entry) => {
+  const title = document.createElement('strong');
+  title.textContent = `${entry.title}:`;
+  display.replaceChildren(title, ` ${entry.body}`);
+};
 const buildItem = (entry) => {
   const item = document.createElement('li');
   item.className = 'card';
@@ -10,10 +50,7 @@ const buildItem = (entry) => {
 
   const display = document.createElement('span');
   display.className = 'entry-display';
-
-  const title = document.createElement('strong');
-  title.textContent = `${entry.title}:`;
-  display.append(title, ` ${entry.body}`);
+  fillDisplay(display, entry);
 
   const editButton = document.createElement('button');
   editButton.type = 'button';
@@ -36,11 +73,7 @@ const makeInput = (name, value) => {
   input.value = value;
   return input;
 };
-const fillDisplay = (display, entry) => {
-  const title = document.createElement('strong');
-  title.textContent = `${entry.title}:`;
-  display.replaceChildren(title, ` ${entry.body}`);
-};
+
 const startEdit = (item) => {
   const display = item.querySelector('.entry-display');
   const buttons = item.querySelectorAll('.edit-btn, .delete-btn');
@@ -76,27 +109,12 @@ const startEdit = (item) => {
 
     const entry = Object.fromEntries(new FormData(editForm));
     save.disabled = true;
-
     try {
-      const response = await fetch(`/entries/${item.dataset.id}`, {
+      const saved = await fetchJSON(`/entries/${item.dataset.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(entry),
-        signal: AbortSignal.timeout(5000),
       });
-
-      if (response.status === 404) {
-        alert('This entry was already deleted.');
-        item.remove();
-        return;
-      }
-
-      if (!response.ok) {
-        const { error } = await response.json();
-        alert(error);
-        return;
-      }
-      const saved = await response.json();
 
       item.dataset.title = saved.title;
       item.dataset.body = saved.body;
@@ -104,9 +122,13 @@ const startEdit = (item) => {
       fillDisplay(display, saved);
       editForm.replaceWith(display);
       buttons.forEach(button => { button.hidden = false; });
-
-    } catch {
-      alert('Your changes were not saved: the server did not answer properly. Please try again.');
+    } catch (error) {
+      if (error.status === 404) {
+        alert('This entry was already deleted.');
+        item.remove();
+        return;
+      }
+      alert(`Your changes were not saved. ${error.message}`);
     } finally {
       save.disabled = false;
     }
@@ -120,28 +142,19 @@ form.addEventListener('submit', async (event) => {
   const entry = Object.fromEntries(data);
   const button = form.querySelector('button');
 
-  // Prevent submitting the same note twice while saving.
+  // Preventing submitting the same note twice while saving.
   button.disabled = true;
-
   try {
-    const response = await fetch('/entries', {
+    const saved = await fetchJSON('/entries', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(entry),
-      signal: AbortSignal.timeout(5000),
     });
 
-    if (!response.ok) {
-      const { error } = await response.json();
-      alert(error);
-      return;
-    }
-
-    const saved = await response.json();
     list.append(buildItem(saved));
     form.reset();
-  } catch {
-    alert('Your entry was not saved: the server did not answer properly. Please try again.');
+  } catch (error) {
+    alert(`Your entry was not saved. ${error.message}`);
   } finally {
     button.disabled = false;
   }
@@ -159,25 +172,18 @@ list.addEventListener('click', async (event) => {
   const item = button.closest('li');
   const id = item.dataset.id;
 
-  // Prevent double-clicking Delete while the request is pending.
+  // Preventing double-clicking Delete while the request is pending.
   button.disabled = true;
 
   try {
-    const response = await fetch(`/entries/${id}`, {
+    await fetchJSON(`/entries/${id}`, {
       method: 'DELETE',
-      signal: AbortSignal.timeout(5000),
     });
 
-    if (!response.ok) {
-      const { error } = await response.json();
-      alert(error);
-      button.disabled = false;
-      return;
-    }
-
     item.remove();
-  } catch {
-    alert('That entry was not deleted: the server did not answer properly. Please try again.');
+  } catch (error) {
+    alert(`That entry was not deleted. ${error.message}`);
+  } finally {
     button.disabled = false;
   }
 });

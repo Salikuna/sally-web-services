@@ -1,7 +1,6 @@
-
 export const toEntryDto = (entry) => ({
-  id: entry.id,
+  id: entry._id.toString(),
   title: entry.title,
   body: entry.body,
-  ...(entry.pinned !== undefined ? { pinned: entry.pinned } : {})
+  ...(entry.pinned !== undefined ? { pinned: entry.pinned } : {}),
 });

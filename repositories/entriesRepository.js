@@ -1,33 +1,37 @@
+import mongoose from "mongoose";
 
-import { readFile, writeFile } from 'fs/promises';
+const entrySchema = new mongoose.Schema(
+  {
+    title: { type: String, required: true },
+    body: { type: String, required: true },
+    pinned: { type: Boolean, default: false },
+  },
+  { timestamps: true },
+);
 
-const DATA_FILE = 'entries.json';
-const COUNTER_FILE = 'next-entry-id.json';
+const Entry = mongoose.model("Entry", entrySchema);
+
+export const isValidId = (id) => {
+  return mongoose.Types.ObjectId.isValid(id);
+};
 
 export const getAll = async () => {
-  const data = await readFile(DATA_FILE, 'utf-8');
-  return JSON.parse(data);
+  return Entry.find().lean();
 };
 
-export const save = async (entries) => {
-  await writeFile(DATA_FILE, JSON.stringify(entries, null, 2));
+export const findById = async (id) => {
+  return Entry.findById(id).lean();
 };
 
-export const getNextId = async () => {
-  const data = await readFile(COUNTER_FILE, 'utf-8');
-  const counter = JSON.parse(data);
-  return counter.nextId;
+export const create = async (data) => {
+  const entry = await Entry.create(data);
+  return entry.toObject();
 };
 
-export const saveNextId = async (nextId) => {
-  await writeFile(
-    COUNTER_FILE,
-    JSON.stringify({ nextId }, null, 2)
-  );
+export const updateById = async (id, data) => {
+  return Entry.findByIdAndUpdate(id, data, { new: true }).lean();
 };
-let writeQueue = Promise.resolve();
-export const queueWrite = (operation) => {
-  const result = writeQueue.then(operation);
-  writeQueue = result.catch(() => {});
-  return result;
+
+export const removeById = async (id) => {
+  await Entry.findByIdAndDelete(id);
 };

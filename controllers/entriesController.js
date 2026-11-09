@@ -1,15 +1,10 @@
-
-import * as entriesService from '../services/entriesService.js';
-
-const parseId = (rawId) => {
-  const id = Number(rawId);
-  return Number.isInteger(id) && id >= 0 ? id : null;
-};
+import * as entriesService from "../services/entriesService.js";
+import { isValidId } from "../repositories/entriesRepository.js";
 
 const sendResult = (res, result, successStatus = 200) => {
   if (!result.ok) {
     return res.status(result.error.status).json({
-      error: result.error.message
+      error: result.error.message,
     });
   }
   return res.status(successStatus).json(result.value);
@@ -18,32 +13,35 @@ const sendResult = (res, result, successStatus = 200) => {
 export const index = async (req, res) => {
   const entries = await entriesService.listEntries();
 
-  res.set('Cache-Control', 'public, max-age=60');
-  res.set('X-Total-Count', entries.length);
+  res.set("Cache-Control", "public, max-age=60");
+  res.set("X-Total-Count", entries.length);
 
-  res.status(200).render('layout', {
-    title: 'My Notes',
-    page: 'entries',
-    entries
+  res.status(200).render("layout", {
+    title: "My Notes",
+    page: "entries",
+    entries,
   });
 };
 
 export const show = async (req, res) => {
-  const id = parseId(req.params.id);
-  const result = await entriesService.getEntry(id);
+  const { id } = req.params;
+
+  const result = isValidId(id)
+    ? await entriesService.getEntry(id)
+    : { ok: false };
 
   if (!result.ok) {
-    return res.status(404).render('layout', {
-      title: 'Error',
-      page: 'error',
-      message: 'Entry not found.'
+    return res.status(404).render("layout", {
+      title: "Error",
+      page: "error",
+      message: "Entry not found.",
     });
   }
 
-  res.status(200).render('layout', {
+  res.status(200).render("layout", {
     title: result.value.title,
-    page: 'entry',
-    entry: result.value
+    page: "entry",
+    entry: result.value,
   });
 };
 
@@ -59,14 +57,14 @@ export const createClassic = async (req, res) => {
     return res.status(result.error.status).send(result.error.message);
   }
 
-  return res.redirect('/entries');
+  return res.redirect("/entries");
 };
 
 export const update = async (req, res) => {
-  const id = parseId(req.params.id);
+  const { id } = req.params;
 
-  if (id === null) {
-    return res.status(404).json({ error: 'Entry not found' });
+  if (!isValidId(id)) {
+    return res.status(400).json({ error: "id must be a valid id" });
   }
 
   const result = await entriesService.updateEntry(id, req.body);
@@ -74,10 +72,10 @@ export const update = async (req, res) => {
 };
 
 export const pin = async (req, res) => {
-  const id = parseId(req.params.id);
+  const { id } = req.params;
 
-  if (id === null) {
-    return res.status(404).json({ error: 'Entry not found' });
+  if (!isValidId(id)) {
+    return res.status(400).json({ error: "id must be a valid id" });
   }
 
   const result = await entriesService.pinEntry(id, req.body?.pinned);
@@ -85,17 +83,17 @@ export const pin = async (req, res) => {
 };
 
 export const destroy = async (req, res) => {
-  const id = parseId(req.params.id);
+  const { id } = req.params;
 
-  if (id === null) {
-    return res.status(404).json({ error: 'Entry not found' });
+  if (!isValidId(id)) {
+    return res.status(400).json({ error: "id must be a valid id" });
   }
 
   const result = await entriesService.deleteEntry(id);
 
   if (!result.ok) {
     return res.status(result.error.status).json({
-      error: result.error.message
+      error: result.error.message,
     });
   }
 

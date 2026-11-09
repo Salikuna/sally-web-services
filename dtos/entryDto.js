@@ -3,4 +3,5 @@ export const toEntryDto = (entry) => ({
   title: entry.title,
   body: entry.body,
   ...(entry.pinned !== undefined ? { pinned: entry.pinned } : {}),
+  favorite: entry.favorite ?? false,
 });

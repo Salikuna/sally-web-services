@@ -99,3 +99,17 @@ export const destroy = async (req, res) => {
 
   return res.status(204).send();
 };
+
+export const toggleFavorite = async (req, res) => {
+  const { id } = req.params;
+
+  if (!isValidId(id)) {
+    return res.status(400).json({
+      error: "id must be a valid id",
+    });
+  }
+
+  const result = await entriesService.toggleFavorite(id);
+
+  return sendResult(res, result);
+};

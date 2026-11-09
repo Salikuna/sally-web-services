@@ -82,3 +82,25 @@ export const pinEntry = async (id, pinned) => {
 
   return Ok(toEntryDto(updated));
 };
+
+export const toggleFavorite = async (id) => {
+  if (!repository.isValidId(id)) {
+    return Err({ status: 400, message: "id must be a valid id" });
+  }
+
+  const entry = await repository.findById(id);
+
+  if (!entry) {
+    return Err({ status: 404, message: "Entry not found" });
+  }
+
+  const updated = await repository.updateById(id, {
+    favorite: !entry.favorite,
+  });
+
+  if (!updated) {
+    return Err({ status: 404, message: "Entry not found" });
+  }
+
+  return Ok(toEntryDto(updated));
+};

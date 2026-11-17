@@ -19,7 +19,7 @@ const validateEntry = ({ title, body } = {}) => {
 
 export const listEntries = async () => {
   const entries = await repository.getAll();
-  return entries.map(toEntryDto);
+  return entries.map(toEntryDto).sort((a, b) => a.title.localeCompare(b.title));
 };
 
 export const getEntry = async (id) => {

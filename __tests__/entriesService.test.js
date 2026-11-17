@@ -76,3 +76,20 @@ test("listEntries returns entries sorted alphabetically by title", async () => {
   // Assert
   expect(result.map((entry) => entry.title)).toEqual(["Apple", "Zebra"]);
 });
+
+test("deleteEntry removes an existing entry", async () => {
+  // Arrange
+  repository.findById.mockResolvedValueOnce({
+    _id: "1",
+    title: "Test",
+    body: "Test body",
+  });
+  repository.removeById.mockClear();
+
+  // Act
+  const result = await deleteEntry("1");
+
+  // Assert
+  expect(result.ok).toBe(true);
+  expect(repository.removeById).toHaveBeenCalledWith("1");
+});

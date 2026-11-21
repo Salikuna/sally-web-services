@@ -35,3 +35,4 @@ app.listen(PORT, () => console.log(`Server is running at http://localhost:${PORT
 // checkpoint 3
 // BUG: off-by-one introduced here
 // checkpoint 4
+// checkpoint 5

@@ -7,9 +7,9 @@
 <ul id="entries" class="cards">
   <% entries.forEach((entry) => { %>
     <li class="card"
-        data-id="<%= entry.id %>"
-        data-title="<%= entry.title %>"
-        data-body="<%= entry.body %>">
+      data-id="<%= entry.id %>"
+      data-title="<%= entry.title %>"
+      data-body="<%= entry.body %>">
 
       <span class="entry-display">
         <strong><%= entry.title %>:</strong>
@@ -23,7 +23,17 @@
         aria-pressed="<%= entry.favorite %>">
         <%= entry.favorite ? '★' : '☆' %>
       </button>
-      <button type="button" class="delete-btn">Delete</button>
+      <button
+        type="button"
+        class="delete-btn"
+        hx-delete="/entries/<%= entry.id %>"
+        hx-target="closest li"
+        hx-swap="outerHTML"
+        hx-confirm="Delete this entry?"
+        hx-disabled-elt="this"
+        hx-indicator="closest li"
+      >Delete</button>
+      <span class="delete-indicator htmx-indicator">Deleting...</span>
     </li>
   <% }); %>
 </ul>

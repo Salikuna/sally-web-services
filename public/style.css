@@ -56,3 +56,11 @@ nav a {
     flex-basis: 100%;
   }
 }
+
+.delete-indicator {
+  display: none;
+}
+
+.htmx-request .delete-indicator {
+  display: inline;
+}

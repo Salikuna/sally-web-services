@@ -97,7 +97,7 @@ export const destroy = async (req, res) => {
     });
   }
 
-  return res.status(204).send();
+  return res.status(200).send("");
 };
 
 export const toggleFavorite = async (req, res) => {

@@ -1,6 +1,6 @@
 const form = document.querySelector("#entry-form");
 const list = document.querySelector("#entries");
-
+htmx.config.timeout = 5000;
 const timedFetch = (url, options = {}) =>
   fetch(url, { ...options, signal: AbortSignal.timeout(5000) });
 
@@ -70,6 +70,16 @@ const buildItem = (entry) => {
   deleteButton.type = "button";
   deleteButton.className = "delete-btn";
   deleteButton.textContent = "Delete";
+  deleteButton.setAttribute("hx-delete", `/entries/${entry.id}`);
+  deleteButton.setAttribute("hx-target", "closest li");
+  deleteButton.setAttribute("hx-swap", "outerHTML");
+  deleteButton.setAttribute("hx-confirm", "Delete this entry?");
+  deleteButton.setAttribute("hx-disabled-elt", "this");
+  deleteButton.setAttribute("hx-indicator", "closest li");
+
+  const deleteIndicator = document.createElement("span");
+  deleteIndicator.className = "delete-indicator htmx-indicator";
+  deleteIndicator.textContent = "Deleting...";
 
   item.append(display, editButton, favoriteButton, deleteButton);
   return item;
@@ -166,7 +176,9 @@ form.addEventListener("submit", async (event) => {
       body: JSON.stringify(entry),
     });
 
-    list.append(buildItem(saved));
+    const item = buildItem(saved);
+    list.append(item);
+    htmx.process(item);
     form.reset();
   } catch (error) {
     alert(`Your entry was not saved. ${error.message}`);
@@ -206,25 +218,20 @@ list.addEventListener("click", async (event) => {
     startEdit(event.target.closest("li"));
     return;
   }
+});
 
-  if (!event.target.matches(".delete-btn")) return;
+list.addEventListener("htmx:responseError", (event) => {
+  alert(
+    `That entry was not deleted. The server answered ${event.detail.xhr.status}.`,
+  );
+});
 
-  const button = event.target;
-  const item = button.closest("li");
-  const id = item.dataset.id;
+list.addEventListener("htmx:sendError", () => {
+  alert("That entry was not deleted. Could not reach the server.");
+});
 
-  // Preventing double-clicking Delete while the request is pending.
-  button.disabled = true;
-
-  try {
-    await fetchJSON(`/entries/${id}`, {
-      method: "DELETE",
-    });
-
-    item.remove();
-  } catch (error) {
-    alert(`That entry was not deleted. ${error.message}`);
-  } finally {
-    button.disabled = false;
-  }
+list.addEventListener("htmx:timeout", () => {
+  alert(
+    "That entry was not deleted. The server did not answer within five seconds.",
+  );
 });
